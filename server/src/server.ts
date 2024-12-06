@@ -10,7 +10,6 @@ import { expressMiddleware } from '@apollo/server/express4'; // Correct import f
 import { typeDefs, resolvers } from './schemas/index.js';
 import { authenticateToken } from './utils/auth.js'; // Import the authenticateToken function
 
-
 const PORT = process.env.PORT || 3001;
 const app = express();
 const server = new ApolloServer({
@@ -34,9 +33,12 @@ const startApolloServer = async () => {
     }
   }));
 
+  // Serve static files in production
   if (process.env.NODE_ENV === 'production') {
     const __dirname = path.dirname(new URL(import.meta.url).pathname);
     app.use(express.static(path.join(__dirname, '../client/dist')));
+
+    // Serve index.html for any other request
     app.get('*', (_req: Request, res: Response) => {
       res.sendFile(path.join(__dirname, '../client/dist/index.html'));
     });
