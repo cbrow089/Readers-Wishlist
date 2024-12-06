@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import { GraphQLError } from 'graphql';
 import dotenv from 'dotenv';
 dotenv.config();
-export const authenticateToken = ({ req }) => {
+export const authenticateToken = (req) => {
     // Allows token to be sent via req.body, req.query, or headers
     let token = req.body.token || req.query.token || req.headers.authorization;
     // If the token is sent in the authorization header, extract the token from the header
@@ -21,7 +21,7 @@ export const authenticateToken = ({ req }) => {
     }
     catch (err) {
         // If the token is invalid, log an error message
-        console.log('Invalid token');
+        console.error('Token verification failed:', err);
     }
     // Return the request object
     return req;
