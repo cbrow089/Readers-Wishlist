@@ -25,7 +25,7 @@ export const authenticateToken = ({ req }: any) => {
     req.user = data;
   } catch (err) {
     // If the token is invalid, log an error message
-    console.log('Invalid token');
+    console.error('Token verification failed:', err);
   }
 
   // Return the request object

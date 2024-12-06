@@ -1,38 +1,46 @@
-import express from 'express';
-import { ApolloServer } from '@apollo/server';
-import { expressMiddleware } from '@apollo/server/express4';
-import path from 'node:path';
+import dotenv from 'dotenv';
+dotenv.config();
 
-import { typeDefs, resolvers } from './schemas/index.js';
+import express from 'express';
+import path from 'node:path';
+import type { Request, Response } from 'express';
 import db from './config/connection.js';
+import { ApolloServer } from '@apollo/server'; // Import Apollo Server
+import { expressMiddleware } from '@apollo/server/express4'; // Correct import for Express 4
+import { typeDefs, resolvers } from './schemas/index.js';
+import { authenticateToken } from './utils/auth.js'; // Import the authenticateToken function
+
 
 const PORT = process.env.PORT || 3001;
 const app = express();
 const server = new ApolloServer({
   typeDefs,
-  resolvers,
+  resolvers
 });
 
 const startApolloServer = async () => {
-  await server.start();
-  await db();
+  await server.start(); // Start the Apollo Server
+  await db(); // Connect to the database
 
   app.use(express.urlencoded({ extended: false }));
   app.use(express.json());
 
-  // Important for MERN Setup: When our application runs from production, it functions slightly differently than in development
-  // In development, we run two servers concurrently that work together
-  // In production, our Node server runs and delivers our client-side bundle from the dist/ folder
+  // Apply Apollo Server middleware to the Express app
+  app.use('/graphql', expressMiddleware(server, {
+    context: async ({ req }) => {
+      // Use the authenticateToken function to set the context
+      const user = await authenticateToken({ req }); // Pass the request object
+      return { user }; // Pass the user object to the context
+    }
+  }));
+
   if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../client/dist')));
 
-    app.get('*', (_req, res) => {
+    app.get('*', (_req: Request, res: Response) => {
       res.sendFile(path.join(__dirname, '../client/dist/index.html'));
     });
   }
-
-  // Important for MERN Setup: Any client-side requests that begin with '/graphql' will be handled by our Apollo Server
-  app.use('/graphql', expressMiddleware(server));
 
   app.listen(PORT, () => {
     console.log(`API server running on port ${PORT}!`);
