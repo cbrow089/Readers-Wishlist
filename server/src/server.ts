@@ -37,11 +37,11 @@ const startApolloServer = async () => {
   if (process.env.NODE_ENV === 'production') {
     const __dirname = path.dirname(new URL(import.meta.url).pathname);
     // Adjust the path to point to the client/dist directory
-    app.use(express.static(path.join(__dirname, 'client/dist')));
+    app.use(express.static(path.join(__dirname, '../client/dist')));
 
     // Serve index.html for any other request
     app.get('*', (_req: Request, res: Response) => {
-      res.sendFile(path.join(__dirname, 'client/dist/index.html'));
+      res.sendFile(path.join(__dirname, '../client/dist/index.html'));
     });
   }
 
