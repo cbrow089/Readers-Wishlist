@@ -5,7 +5,7 @@
   "main": "server/server.js",
   "scripts": {
     "start": "concurrently \"npm run server\" \"npm run dev\"",
-    "server": "node server/dist/server.js",
+    "server": "node dist/server.js",
     "dev": "vite",
     "start:dev": "concurrently \"cd server && npm run watch\" \"wait-on tcp:3001 && cd client && npm run dev\"",
     "develop": "concurrently \"cd server && npm run watch\" \"cd client && npm run dev\"",
