@@ -22,7 +22,7 @@ const startApolloServer = async () => {
     app.use('/graphql', expressMiddleware(server, {
         context: async ({ req }) => {
             // Use the authenticateToken function to set the context
-            const user = await authenticateToken({ req }); // Pass the request object
+            const user = await authenticateToken(req); // Pass the request object directly
             return { user }; // Pass the user object to the context
         }
     }));
