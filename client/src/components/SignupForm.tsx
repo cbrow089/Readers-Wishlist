@@ -1,19 +1,22 @@
 import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { Form, Button, Alert } from 'react-bootstrap';
-
-import { createUser } from '../utils/API';
+import { useMutation } from '@apollo/client';
+import { ADD_USER } from '../utils/mutations'; // Import your ADD_USER mutation
 import Auth from '../utils/auth';
 import type { User } from '../models/User';
 
 // biome-ignore lint/correctness/noEmptyPattern: <explanation>
-const SignupForm = ({}: { handleModalClose: () => void }) => {
+const SignupForm = ({ handleModalClose }: { handleModalClose: () => void }) => {
   // set initial form state
   const [userFormData, setUserFormData] = useState<User>({ username: '', email: '', password: '', savedBooks: [] });
   // set state for form validation
   const [validated] = useState(false);
   // set state for alert
   const [showAlert, setShowAlert] = useState(false);
+
+    // Use useMutation for the ADD_USER mutation
+    const [addUser ] = useMutation(ADD_USER);
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
@@ -22,28 +25,33 @@ const SignupForm = ({}: { handleModalClose: () => void }) => {
 
   const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
+  
     // check if form has everything (as per react-bootstrap docs)
     const form = event.currentTarget;
     if (form.checkValidity() === false) {
       event.preventDefault();
       event.stopPropagation();
     }
-
+  
     try {
-      const response = await createUser(userFormData);
-
-      if (!response.ok) {
-        throw new Error('something went wrong!');
-      }
-
-      const { token } = await response.json();
+      const { data } = await addUser({
+        variables: {
+          username: userFormData.username, // Pass username individually
+          email: userFormData.email,       // Pass email individually
+          password: userFormData.password,  // Pass password individually
+        },
+      });
+  
+      // Assuming the mutation returns a token
+      const { token } = data.addUser; // Adjust this based on your mutation's return value
       Auth.login(token);
+      handleModalClose(); // Close the modal after successful signup
     } catch (err) {
-      console.error(err);
+      console.error('Signup error:'); // Log the error message
       setShowAlert(true);
     }
-
+  
+    // Reset form data
     setUserFormData({
       username: '',
       email: '',

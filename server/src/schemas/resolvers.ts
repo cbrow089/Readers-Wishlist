@@ -69,7 +69,7 @@ export const resolvers = {
       return { token, user };
     },
 
-    // Resolver for saveBook
+      // Resolver for saveBook
     saveBook: async (_: any, { book }: { book: any }, context: any) => {
       if (!context.user) {
         throw new GraphQLError('Authentication required', {
@@ -78,13 +78,13 @@ export const resolvers = {
       }
 
       try {
-        const updatedUser = await User.findOneAndUpdate(
+        const updatedUser  = await User.findOneAndUpdate(
           { _id: context.user._id },
           { $addToSet: { savedBooks: book } },
           { new: true, runValidators: true }
         );
 
-        return updatedUser;
+        return updatedUser ;
       } catch (error) {
         throw new GraphQLError('Error saving book', {
           extensions: { code: 'BAD_USER_INPUT' }
