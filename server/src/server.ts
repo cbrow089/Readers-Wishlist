@@ -36,6 +36,7 @@ const startApolloServer = async () => {
   // Serve static files in production
   if (process.env.NODE_ENV === 'production') {
     const __dirname = path.dirname(new URL(import.meta.url).pathname);
+    // Adjust the path to point to the client/dist directory
     app.use(express.static(path.join(__dirname, '../client/dist')));
 
     // Serve index.html for any other request
