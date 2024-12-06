@@ -35,8 +35,8 @@ const startApolloServer = async () => {
   }));
 
   if (process.env.NODE_ENV === 'production') {
+    const __dirname = path.dirname(new URL(import.meta.url).pathname);
     app.use(express.static(path.join(__dirname, '../client/dist')));
-
     app.get('*', (_req: Request, res: Response) => {
       res.sendFile(path.join(__dirname, '../client/dist/index.html'));
     });
