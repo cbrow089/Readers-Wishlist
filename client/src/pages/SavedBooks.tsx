@@ -1,28 +1,25 @@
 import { Container, Card, Button, Row, Col } from 'react-bootstrap';
 import { useQuery, useMutation } from '@apollo/client';
-import { GET_ME } from '../utils/queries'; // Import your GET_ME query
-import { REMOVE_BOOK } from '../utils/mutations'; // Import your REMOVE_BOOK mutation
+import { GET_ME } from '../utils/queries'; // Ensure this is the correct path
+import { REMOVE_BOOK } from '../utils/mutations'; // Ensure this is the correct path
 import Auth from '../utils/auth';
 import { removeBookId } from '../utils/localStorage';
 import type { User } from '../models/User';
+import { useState } from 'react';
 
 const SavedBooks = () => {
-  // Use useQuery to fetch user data
-  const { loading, error, data } = useQuery(GET_ME);
-  
-  // Use useMutation for removing a book
+  const { loading, data } = useQuery(GET_ME);
   const [removeBook] = useMutation(REMOVE_BOOK);
+  const [savedBooks, setSavedBooks] = useState(data?.me.savedBooks || []);
 
-  // Handle loading and error states
-  if (loading) return <h2>LOADING...</h2>;
-  if (error) {
-    console.error(error);
-    return <h2>Error loading user data.</h2>;
-  }
+  const userData: User = data?.me || {
+    username: '',
+    email: '',
+    savedBooks: [],
+  };
 
-  const userData: User = data.me; // Assuming the response structure matches your User type
+  console.log(data);
 
-  // create function that accepts the book's mongo _id value as param and deletes the book from the database
   const handleDeleteBook = async (bookId: string) => {
     const token = Auth.loggedIn() ? Auth.getToken() : null;
 
@@ -31,17 +28,27 @@ const SavedBooks = () => {
     }
 
     try {
-      await removeBook({
-        variables: { bookId }, // Pass the bookId to the mutation
-      });
+      const response = await removeBook({ variables: { bookId } });
 
-      // Assuming the mutation returns the updated user data
-      // Update local storage
+      if (!response.data) {
+        throw new Error('something went wrong!');
+      }
+
+      // Update local state to remove the book
+      setSavedBooks((prevBooks: { bookId: string }[]) => prevBooks.filter((book: { bookId: string }) => book.bookId !== bookId));
+
+      // upon success, remove book's id from localStorage
       removeBookId(bookId);
     } catch (err) {
       console.error(err);
+      // Optionally, show an error message to the user
     }
   };
+
+  // if data isn't here yet, say so
+  if (loading) {
+    return <h2>LOADING...</h2>;
+  }
 
   return (
     <>
@@ -56,37 +63,39 @@ const SavedBooks = () => {
       </div>
       <Container>
         <h2 className='pt-5'>
-          {userData.savedBooks.length
-            ? `Viewing ${userData.savedBooks.length} saved ${
-                userData.savedBooks.length === 1 ? 'book' : 'books'
+          {savedBooks.length
+            ? `Viewing ${savedBooks.length} saved ${
+                savedBooks.length === 1 ? 'book' : 'books'
               }:`
             : 'You have no saved books!'}
         </h2>
         <Row>
-          {userData.savedBooks.map((book) => (
-            <Col md='4' key={book.bookId}> {/* Moved key prop to Col */}
-              <Card border='dark'>
-                {book.image ? (
-                  <Card.Img
-                    src={book.image}
-                    alt={`The cover for ${book.title}`}
-                    variant='top'
-                  />
-                ) : null}
-                <Card.Body>
-                  <Card.Title>{book.title}</Card.Title>
-                  <p className='small'>Authors: {book.authors}</p>
-                  <Card.Text>{book.description}</Card.Text>
-                  <Button
-                    className='btn-block btn-danger'
-                    onClick={() => handleDeleteBook(book.bookId)}
-                  >
-                    Delete this Book!
-                  </Button>
-                </Card.Body>
-              </Card>
-            </Col>
-          ))}
+          {savedBooks.map((book: { bookId: string; image?: string; title: string; authors: string[]; description: string }) => {
+            return (
+              <Col md='4' key={book.bookId}>
+                <Card border='dark'>
+                  {book.image ? (
+                    <Card.Img
+                      src={book.image}
+                      alt={`The cover for ${book.title}`}
+                      variant='top'
+                    />
+                  ) : null}
+                  <Card.Body>
+                    <Card.Title>{book.title}</Card.Title>
+                    <p className='small'>Authors: {book.authors.join(', ')}</p>
+                    <Card.Text>{book.description}</Card.Text>
+                    <Button
+                      className='btn-block btn-danger'
+                      onClick={() => handleDeleteBook(book.bookId)}
+                    >
+                      Delete this Book!
+                    </Button>
+                  </Card.Body>
+                </Card>
+              </Col>
+            );
+          })}
         </Row>
       </Container>
     </>

@@ -4,7 +4,7 @@ import { signToken } from '../services/auth.js';
 export const resolvers = {
     Query: {
         // Resolver for getSingleUser
-        getUser: async (_, { id, username }, context) => {
+        me: async (_, { id, username }, context) => {
             // If no context.user for id, use the provided id or username
             const searchCriteria = context.user
                 ? { _id: context.user._id }
@@ -25,20 +25,21 @@ export const resolvers = {
     },
     Mutation: {
         // Resolver for createUser
-        createUser: async (_, { input }) => {
+        addUser: async (_, { username, email, password }) => {
             try {
-                const user = await User.create(input);
+                const user = await User.create({ username, email, password }); // Pass individual fields
                 const token = signToken(user.username, user.password, user._id);
                 return { token, user };
             }
             catch (error) {
+                console.error('Error creating user:', error); // Log the error for debugging
                 throw new GraphQLError('Something is wrong with user creation!', {
                     extensions: { code: 'BAD_USER_INPUT' }
                 });
             }
         },
         // Resolver for login
-        login: async (_, { username, email, password }) => {
+        loginUser: async (_, { username, email, password }) => {
             const user = await User.findOne({
                 $or: [
                     username ? { username } : {},
@@ -77,7 +78,7 @@ export const resolvers = {
             }
         },
         // Resolver for deleteBook
-        deleteBook: async (_, { bookId }, context) => {
+        removeBook: async (_, { bookId }, context) => {
             if (!context.user) {
                 throw new GraphQLError('Authentication required', {
                     extensions: { code: 'UNAUTHENTICATED' }

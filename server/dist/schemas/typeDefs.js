@@ -4,21 +4,22 @@ export const typeDefs = gql `
     _id: ID!
     username: String!
     email: String!
-    savedBooks: [Book!]
+    savedBooks: [Book]
+    bookCount: Int
   }
 
   type Book {
-    bookId: String!
+    bookId: ID!
     authors: [String]
     description: String
-    title: String!
+    title: String
     image: String
     link: String
   }
 
-  type AuthPayload {
-    token: String!
-    user: User!
+  type Auth {
+    token: ID!
+    user: User
   }
 
   input UserInput {
@@ -28,23 +29,24 @@ export const typeDefs = gql `
   }
 
   input BookInput {
-    bookId: String!
-    authors: [String]
-    description: String
-    title: String!
-    image: String
-    link: String
-  }
+  bookId: ID!
+  authors: [String]!
+  title: String!
+  description: String
+  image: String
+  link: String
+}
 
   type Query {
-    getUser(id: ID, username: String): User
+    me: User
+    getSingleUser(id: ID, username: String): User
   }
 
   type Mutation {
-    createUser(input: UserInput!): AuthPayload!
-    login(username: String, email: String, password: String!): AuthPayload!
-    saveBook(book: BookInput!): User!
-    deleteBook(bookId: String!): User!
+    loginUser(username: String, email: String, password: String): Auth
+    addUser(username: String!, email: String!, password: String!): Auth
+    saveBook(book: BookInput!): User
+    removeBook(bookId: ID!): User
   }
 `;
 export default typeDefs;

@@ -1,21 +1,13 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
-import {
-  Container,
-  Col,
-  Form,
-  Button,
-  Card,
-  Row
-} from 'react-bootstrap';
-
+import { Container, Col, Form, Button, Card, Row } from 'react-bootstrap';
+import { useMutation } from '@apollo/client';
+import { SAVE_BOOK } from '../utils/mutations'; // Ensure this is the correct path
 import Auth from '../utils/auth';
 import { searchGoogleBooks } from '../utils/API';
 import { saveBookIds, getSavedBookIds } from '../utils/localStorage';
 import type { Book } from '../models/Book';
 import type { GoogleAPIBook } from '../models/GoogleAPIBook';
-import { useMutation } from '@apollo/client';
-import { SAVE_BOOK } from '../utils/mutations';
 
 const SearchBooks = () => {
   // create state for holding returned google api data
@@ -29,10 +21,10 @@ const SearchBooks = () => {
   // set up useEffect hook to save `savedBookIds` list to localStorage on component unmount
   useEffect(() => {
     return () => saveBookIds(savedBookIds);
-  }, [savedBookIds]); // Add savedBookIds as a dependency
+  }, [savedBookIds]);
 
-  // Set up the SAVE_BOOK mutation
-  const [saveBookMutation] = useMutation(SAVE_BOOK);
+  // Use the Apollo useMutation() hook for SAVE_BOOK
+  const [saveBook] = useMutation(SAVE_BOOK);
 
   // create method to search for books and set state on form submit
   const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -79,12 +71,11 @@ const SearchBooks = () => {
     }
 
     try {
-      // Execute the mutation
-      const { data } = await saveBookMutation({
-        variables: { book: { ...bookToSave } }, // Adjust based on your mutation's expected input
+      const { data } = await saveBook({
+        variables: { book: { ...bookToSave } },
       });
 
-      // Check if the mutation was successful
+      // Check if the response contains the saved book data
       if (!data) {
         throw new Error('something went wrong!');
       }
@@ -122,7 +113,7 @@ const SearchBooks = () => {
           </Form>
         </Container>
       </div>
-
+  
       <Container>
         <h2 className='pt-5'>
           {searchedBooks.length
@@ -139,7 +130,7 @@ const SearchBooks = () => {
                   ) : null}
                   <Card.Body>
                     <Card.Title>{book.title}</Card.Title>
-                    <p className='small'>Authors: {book.authors}</p>
+                    <p className='small'>Authors: {book.authors.join(', ')}</p>
                     <Card.Text>{book.description}</Card.Text>
                     {Auth.loggedIn() && (
                       <Button
@@ -160,6 +151,6 @@ const SearchBooks = () => {
       </Container>
     </>
   );
-};
+}
 
 export default SearchBooks;
