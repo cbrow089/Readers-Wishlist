@@ -5,7 +5,7 @@ import { signToken } from '../services/auth.js';
 export const resolvers = {
   Query: {
     // Resolver for getSingleUser
-    getUser: async (_: any, { id, username }: { id?: string, username?: string }, context: any) => {
+    me: async (_: any, { id, username }: { id?: string, username?: string }, context: any) => {
       // If no context.user for id, use the provided id or username
       const searchCriteria = context.user 
         ? { _id: context.user._id } 
@@ -30,12 +30,13 @@ export const resolvers = {
 
   Mutation: {
     // Resolver for createUser
-    createUser: async (_: any, { input }: { input: any }) => {
+    addUser: async (_: any, { username, email, password }: { username: string; email: string; password: string }) => {
       try {
-        const user = await User.create(input);
+        const user = await User.create({ username, email, password }); // Pass individual fields
         const token = signToken(user.username, user.password, user._id);
         return { token, user };
       } catch (error) {
+        console.error('Error creating user:', error); // Log the error for debugging
         throw new GraphQLError('Something is wrong with user creation!', {
           extensions: { code: 'BAD_USER_INPUT' }
         });
@@ -43,7 +44,7 @@ export const resolvers = {
     },
 
     // Resolver for login
-    login: async (_: any, { username, email, password }: { username?: string, email?: string, password: string }) => {
+    loginUser: async (_: any, { username, email, password }: { username?: string, email?: string, password: string }) => {
       const user = await User.findOne({ 
         $or: [
           username ? { username } : {}, 
@@ -93,7 +94,7 @@ export const resolvers = {
     },
 
     // Resolver for deleteBook
-    deleteBook: async (_: any, { bookId }: { bookId: string }, context: any) => {
+    removeBook: async (_: any, { bookId }: { bookId: string }, context: any) => {
       if (!context.user) {
         throw new GraphQLError('Authentication required', {
           extensions: { code: 'UNAUTHENTICATED' }
