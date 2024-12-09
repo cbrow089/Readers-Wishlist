@@ -17,14 +17,13 @@ const SearchBooks = () => {
 
   // create state to hold saved bookId values
   const [savedBookIds, setSavedBookIds] = useState(getSavedBookIds());
+  // Use the Apollo useMutation() hook for SAVE_BOOK
+  const [saveBook] = useMutation(SAVE_BOOK);
 
   // set up useEffect hook to save `savedBookIds` list to localStorage on component unmount
   useEffect(() => {
     return () => saveBookIds(savedBookIds);
-  }, [savedBookIds]);
-
-  // Use the Apollo useMutation() hook for SAVE_BOOK
-  const [saveBook] = useMutation(SAVE_BOOK);
+  });
 
   // create method to search for books and set state on form submit
   const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -60,26 +59,36 @@ const SearchBooks = () => {
 
   // create function to handle saving a book to our database
   const handleSaveBook = async (bookId: string) => {
-    // find the book in `searchedBooks` state by the matching id
-    const bookToSave: Book = searchedBooks.find((book) => book.bookId === bookId)!;
-
+    console.log("Save button clicked for bookId:", bookId); // Debugging line
+    const bookToSave = searchedBooks.find((book) => book.bookId === bookId)!;
+  
+    // Create the bookInput object
+    const bookInput = {
+      bookId: bookToSave.bookId,
+      authors: bookToSave.authors,
+      title: bookToSave.title,
+      description: bookToSave.description,
+      image: bookToSave.image,
+      link: bookToSave.link,
+    };
+  
     // get token
     const token = Auth.loggedIn() ? Auth.getToken() : null;
-
+  
     if (!token) {
       return false;
     }
-
+  
     try {
       const { data } = await saveBook({
-        variables: { book: { ...bookToSave } },
+        variables: { bookInput }, // Pass the bookInput object
       });
-
+  
       // Check if the response contains the saved book data
       if (!data) {
         throw new Error('something went wrong!');
       }
-
+  
       // if book successfully saves to user's account, save book id to state
       setSavedBookIds([...savedBookIds, bookToSave.bookId]);
     } catch (err) {
@@ -113,7 +122,7 @@ const SearchBooks = () => {
           </Form>
         </Container>
       </div>
-  
+
       <Container>
         <h2 className='pt-5'>
           {searchedBooks.length
@@ -130,7 +139,7 @@ const SearchBooks = () => {
                   ) : null}
                   <Card.Body>
                     <Card.Title>{book.title}</Card.Title>
-                    <p className='small'>Authors: {book.authors.join(', ')}</p>
+                    <p className='small'>Authors: {book.authors}</p>
                     <Card.Text>{book.description}</Card.Text>
                     {Auth.loggedIn() && (
                       <Button
@@ -151,6 +160,6 @@ const SearchBooks = () => {
       </Container>
     </>
   );
-}
+};
 
 export default SearchBooks;
