@@ -47,7 +47,7 @@ const SignupForm = ({ handleModalClose }: { handleModalClose: () => void }) => {
       Auth.login(token);
       handleModalClose(); // Close the modal after successful signup
     } catch (err) {
-      console.error('Signup error:'); // Log the error message
+      console.error('Signup error:', err); // Log the error message
       setShowAlert(true);
     }
   

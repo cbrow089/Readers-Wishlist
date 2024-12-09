@@ -1,38 +1,46 @@
 import { GraphQLError } from 'graphql';
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import { signToken } from '../services/auth.js';
+import bcrypt from 'bcrypt';
 export const resolvers = {
     Query: {
-        // Resolver for getSingleUser
-        me: async (_, { id, username }, context) => {
-            // If no context.user for id, use the provided id or username
-            const searchCriteria = context.user
-                ? { _id: context.user._id }
-                : {
-                    $or: [
-                        id ? { _id: id } : {},
-                        username ? { username: username } : {}
-                    ]
-                };
-            const foundUser = await User.findOne(searchCriteria);
+        me: async (_, __, context) => {
+            // Check if the user is authenticated
+            if (!context.user) {
+                throw new GraphQLError('You need to be logged in!', {
+                    extensions: { code: 'UNAUTHENTICATED' }
+                });
+            }
+            // Check if the user ID is valid
+            if (!mongoose.Types.ObjectId.isValid(context.user._id)) {
+                throw new GraphQLError('Invalid user ID!', {
+                    extensions: { code: 'BAD_USER_INPUT' }
+                });
+            }
+            // Find the user by their ID
+            const foundUser = await User.findById(context.user._id);
             if (!foundUser) {
                 throw new GraphQLError('Cannot find a user with this id!', {
                     extensions: { code: 'NOT_FOUND' }
                 });
             }
-            return foundUser;
-        }
+            console.log('Found user:', foundUser); // Log the found user for debugging
+            return foundUser; // Return the found user, including savedBooks
+        },
     },
     Mutation: {
         // Resolver for createUser
         addUser: async (_, { username, email, password }) => {
             try {
-                const user = await User.create({ username, email, password }); // Pass individual fields
-                const token = signToken(user.username, user.password, user._id);
+                const hashedPassword = await bcrypt.hash(password, 10);
+                const user = await User.create({ username, email, password: hashedPassword });
+                console.log('User created:', user); // Log the created user
+                const token = signToken(user.username, user.email, user._id);
                 return { token, user };
             }
             catch (error) {
-                console.error('Error creating user:', error); // Log the error for debugging
+                console.error('Error creating user:', error);
                 throw new GraphQLError('Something is wrong with user creation!', {
                     extensions: { code: 'BAD_USER_INPUT' }
                 });
@@ -61,15 +69,18 @@ export const resolvers = {
             return { token, user };
         },
         // Resolver for saveBook
-        saveBook: async (_, { book }, context) => {
+        saveBook: async (_, { bookInput }, context) => {
+            // Check if the user is authenticated
             if (!context.user) {
                 throw new GraphQLError('Authentication required', {
                     extensions: { code: 'UNAUTHENTICATED' }
                 });
             }
             try {
-                const updatedUser = await User.findOneAndUpdate({ _id: context.user._id }, { $addToSet: { savedBooks: book } }, { new: true, runValidators: true });
-                return updatedUser;
+                // Update the user document by adding the bookInput to the savedBooks array
+                const updatedUser = await User.findOneAndUpdate({ _id: context.user._id }, { $addToSet: { savedBooks: bookInput } }, // Use $addToSet to avoid duplicates
+                { new: true, runValidators: true });
+                return updatedUser; // Return the updated user
             }
             catch (error) {
                 throw new GraphQLError('Error saving book', {
